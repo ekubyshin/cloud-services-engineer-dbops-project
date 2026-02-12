@@ -6,18 +6,37 @@ on:
 jobs:
   migrate:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: ${{ secrets.DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.DB_NAME }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Flyway migrate
+    - name: Wait for Postgres
+      run: until pg_isready -h ${{ secrets.DB_HOST }} -p ${{ secrets.DB_PORT }}; do sleep 1; done
+
+    - name: Apply migrations with Flyway
       run: |
         docker run --rm \
-        -v ${{ github.workspace }}/migrations:/flyway/sql \
-        flyway/flyway:9-alpine migrate \
-        -url=jdbc:postgresql://${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }} \
-        -user=${{ secrets.DB_USER }} \
-        -password=${{ secrets.DB_PASSWORD }}
+          -v $(pwd)/migrations:/flyway/sql \
+          flyway/flyway \
+          -url="jdbc:postgresql://${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}" \
+          -user="${{ secrets.DB_USER }}" \
+          -password="${{ secrets.DB_PASSWORD }}" \
+          migrate
 
     ### Этот шаг оставьте без изменений
     - name: Download and setup autotests binaries
