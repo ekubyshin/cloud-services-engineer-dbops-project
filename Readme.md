@@ -12,10 +12,10 @@
 
 ### SELECT query
 ```
-SELECT orders.date_created, SUM(order_product.quantity) as cnt
-FROM orders
-JOIN order_product ON orders.id = order_product.order_id
-WHERE orders.status = 'shipped' AND orders.date_created > NOW() - INTERVAL '1 WEEK'
-GROUP BY orders.date_created
-ORDER BY orders.date_created desc;
+SELECT o.date_created, SUM(op.quantity) as cnt
+FROM orders o
+JOIN order_product op ON o.id = op.order_id
+WHERE o.status = 'shipped' AND o.date_created > NOW() - INTERVAL '1 WEEK'
+GROUP BY o.date_created
+ORDER BY o.date_created desc;
 ```
